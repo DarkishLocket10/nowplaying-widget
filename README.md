@@ -87,11 +87,11 @@ Skin authors can tailor every visual aspect:
 
 Bundled reference skins:
 
-- **Cutesy Pastels** – default playful look with soft gradients.
-- **Graphite Mono** – dark, minimal theme tuned for desktops.
-- **Mobile Glow** – compact layout optimized for narrower windows.
-- **Gradient Demo** – showcases the configurable gradient background support.
-- **Aurora Vinyl** – neon turntable aesthetic designed to spotlight the vinyl thumbnail renderer.
+- **Cutesy Pastels** | default playful look with soft gradients.
+- **Graphite Mono** | dark, minimal theme tuned for desktops.
+- **Mobile Glow** | compact layout optimized for narrower windows.
+- **Gradient Demo** | showcases the configurable gradient background support.
+- **Aurora Vinyl** | neon turntable aesthetic designed to spotlight the vinyl thumbnail renderer.
 
 See the following guides for in-depth skin authoring details:
 
