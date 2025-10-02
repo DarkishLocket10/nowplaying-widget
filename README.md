@@ -150,6 +150,4 @@ Skins can explicitly disable vinyl rendering by setting `disable_vinyl_thumbnail
 - [Windows Global System Media Transport Controls API](https://learn.microsoft.com/windows/win32/api/mfmediaengine/ne-mfmediaengine-mf_media_engine_event)
 - [Rust book](https://doc.rust-lang.org/book/)
 
----
 
-> _No explicit license file ships with this project yet. Add one before distributing binaries beyond personal use._
