@@ -1,10 +1,26 @@
 # Now Playing Widget
 
+<table>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/be3cb518-4228-4a6a-81f3-c126b8469993" alt="Now Playing 1" width="150" height="463"></td>
+    <td><img src="https://github.com/user-attachments/assets/ac819988-0dc2-4a8a-8b82-ad0808d11cc6" alt="Now Playing 2" width="150" height="270"></td>
+    <td><img src="https://github.com/user-attachments/assets/32bbb3b6-489f-4613-925f-9c78461cb919" alt="New player view" width="500" height="298">
+</td>
+  </tr>
+
+  <tr>
+    <td colspan="2" align="center">
+      <img src="https://github.com/user-attachments/assets/93271fa9-9dea-42e5-b758-1a83b4577be6" alt="Player wide 1" width="360" height="208">
+    </td>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/2ecca9ea-187c-4700-b4bd-f3ef3a293fdf" alt="Player wide 2" width="360" height="268">
+    </td>
+  </tr>
+</table>
+
 A desktop widget for Windows that surfaces the current playback session using a customizable Rust/egui interface. It mirrors the Windows system media controls, shows album art and metadata, and lets you drive playback with modern, skinable controls.
 
-<p align="center">
-  <em>Customize the layout, colors, fonts, and artwork framing to match your desktop.</em>
-</p>
+I was tired of the current media control dashboards, so I just made a super minimal one in Rust, with a theme and layout engine, so users can customize their own skins to their liking.
 
 ## Table of Contents
 
