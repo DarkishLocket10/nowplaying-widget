@@ -1,0 +1,81 @@
+use_gradient = false
+
+[meta]
+engine = "1"
+name = "cutesy"
+display_name = "Cutesy Pastels"
+disable_vinyl_thumbnail = true
+
+[colors]
+background = "#fff5fb"
+panel = "#ffe9f5"
+accent = "#ff7ac2"
+accent_hover = "#ff6db8"
+accent_active = "#ff58a8"
+text_primary = "#5c3d5b"
+text_secondary = "#8a6287"
+text_on_accent = "#ffffff"
+slider_track_bg = "#ffcde7"
+outline = "#ffb3d7"
+shadow = "rgba(255, 143, 220, 0.35)"
+
+[vars]
+radius = "18"
+panel_border_radius = "24"
+border_width = "2"
+slider_thumb_radius = "12"
+icon_scale = "3.4"
+body_size = "16"
+title_size = "26"
+
+[components.root]
+background = "{colors.background}"
+foreground = "{colors.text_primary}"
+border_color = "transparent"
+border_radius = "{vars.radius}"
+border_width = "0"
+show_border = false
+
+[components.panel]
+background = "{colors.panel}"
+foreground = "{colors.text_primary}"
+border_color = "{colors.outline}"
+border_radius = "{vars.panel_border_radius}"
+border_width = "{vars.border_width}"
+show_border = false
+
+[components.button]
+background = "{colors.accent}"
+foreground = "{colors.text_on_accent}"
+hover_background = "{colors.accent_hover}"
+active_background = "{colors.accent_active}"
+border_color = "{colors.outline}"
+border_radius = "{vars.radius}"
+border_width = "1.2"
+
+[components.button.icon]
+color = "{colors.text_on_accent}"
+size_scale = "{vars.icon_scale}"
+
+[components.slider]
+track_fill = "{colors.accent}"
+track_background = "{colors.slider_track_bg}"
+track_thickness = "6"
+thumb_shape = "image"
+thumb_color = "{colors.text_on_accent}"
+thumb_size = "32"
+thumb_image = "thumb.png"
+
+[components.thumbnail]
+corner_radius = "{vars.panel_border_radius}"
+stroke_color = "{colors.outline}"
+stroke_width = "10"
+overlay_images = []
+
+[components.text.title]
+color = "{colors.text_primary}"
+size = "{vars.title_size}"
+
+[components.text.body]
+color = "{colors.text_secondary}"
+size = "{vars.body_size}"

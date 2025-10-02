@@ -1,0 +1,95 @@
+use_gradient = false
+
+[meta]
+engine = "1"
+name = "aurora_vinyl"
+display_name = "Aurora Vinyl"
+# Vinyl is enabled by default, no need to specify
+
+[colors]
+background = "#0B0E1E"
+panel = "#141932"
+panel_glow = "#1F2650"
+accent = "#56D7FF"
+accent_hover = "#4AC4F0"
+accent_active = "#3CAEE0"
+text_primary = "#F5F7FF"
+text_secondary = "#ABB4DA"
+text_on_accent = "#051524"
+slider_track_bg = "#1F2444"
+outline = "rgba(86, 215, 255, 0.45)"
+shadow = "rgba(17, 25, 58, 0.85)"
+highlight = "rgba(255, 103, 248, 0.6)"
+vinyl_ring = "rgba(86, 215, 255, 0.3)"
+
+[vars]
+radius = "26"
+panel_border_radius = "30"
+border_width = "1.6"
+slider_thumb_radius = "9"
+icon_scale = "1.35"
+body_size = "17"
+title_size = "30"
+thumbnail_stroke = "12"
+thumbnail_radius = "120"
+
+[components.root]
+foreground = "{colors.text_primary}"
+border_color = "transparent"
+border_radius = "{vars.radius}"
+border_width = "{vars.border_width}"
+show_border = false
+
+[components.root.background]
+kind = "gradient"
+start = "#050711"
+end = "#131735"
+direction = "vertical"
+
+[components.panel]
+foreground = "{colors.text_primary}"
+border_color = "{colors.outline}"
+border_radius = "{vars.panel_border_radius}"
+border_width = "{vars.border_width}"
+show_border = true
+
+[components.panel.background]
+kind = "gradient"
+start = "{colors.panel}"
+end = "{colors.panel_glow}"
+direction = "vertical"
+
+[components.button]
+background = "rgba(60, 88, 166, 0.65)"
+foreground = "{colors.text_primary}"
+hover_background = "{colors.highlight}"
+active_background = "{colors.accent}"
+border_color = "{colors.outline}"
+border_radius = "32"
+border_width = "1.4"
+
+[components.button.icon]
+color = "{colors.text_on_accent}"
+size_scale = "{vars.icon_scale}"
+
+[components.slider]
+track_fill = "{colors.accent}"
+track_background = "{colors.slider_track_bg}"
+track_thickness = "6.5"
+thumb_shape = "circle"
+thumb_color = "{colors.accent}"
+thumb_radius = "{vars.slider_thumb_radius}"
+
+[components.thumbnail]
+corner_radius = "{vars.thumbnail_radius}"
+stroke_color = "{colors.vinyl_ring}"
+stroke_width = "{vars.thumbnail_stroke}"
+overlay_images = []
+
+[components.text.title]
+color = "{colors.text_primary}"
+size = "{vars.title_size}"
+
+[components.text.body]
+color = "{colors.text_secondary}"
+size = "{vars.body_size}"

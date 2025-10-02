@@ -1,0 +1,209 @@
+[meta]
+engine = "1"
+
+[layout]
+default = "cutesy_mobile"
+
+[[layout.variants]]
+id = "cutesy_mobile"
+display_name = "Mobile Stack"
+
+[layout.variants.structure]
+type = "column"
+spacing = 14
+align = "center"
+fill = true
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "thumbnail"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "title"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "metadata"
+  [layout.variants.structure.children.params]
+  show_state = "false"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "playback_controls"
+  [layout.variants.structure.children.params]
+  centered = "true"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "timeline"
+  [layout.variants.structure.children.params]
+  centered = "true"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "skin_warnings"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "skin_error"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "thumbnail_error"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "error"
+
+[[layout.variants]]
+id = "cutesy_left"
+display_name = "Artwork Left"
+
+[layout.variants.structure]
+type = "row"
+spacing = 18
+fill = true
+align = "center"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "thumbnail"
+
+[[layout.variants.structure.children]]
+type = "column"
+spacing = 10
+fill = true
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "title"
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "metadata"
+    [layout.variants.structure.children.children.params]
+    show_state = "false"
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "playback_controls"
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "timeline"
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "skin_warnings"
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "skin_error"
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "thumbnail_error"
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "error"
+
+[[layout.variants]]
+id = "cutesy_right"
+display_name = "Artwork Right"
+
+[layout.variants.structure]
+type = "row"
+spacing = 18
+fill = true
+align = "center"
+
+[[layout.variants.structure.children]]
+type = "column"
+spacing = 10
+fill = true
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "title"
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "metadata"
+    [layout.variants.structure.children.children.params]
+    show_state = "false"
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "playback_controls"
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "timeline"
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "skin_warnings"
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "skin_error"
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "thumbnail_error"
+
+  [[layout.variants.structure.children.children]]
+  type = "component"
+  id = "error"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "thumbnail"
+
+[[layout.variants]]
+id = "cutesy_minimal"
+display_name = "Minimal Controls"
+
+[layout.variants.structure]
+type = "column"
+spacing = 12
+fill = true
+align = "center"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "thumbnail"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "title"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "playback_controls"
+  [layout.variants.structure.children.params]
+  centered = "true"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 8
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "skin_warnings"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "skin_error"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "thumbnail_error"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "error"
+
+

@@ -1,0 +1,83 @@
+use_gradient = false
+
+[meta]
+engine = "1"
+name = "graphite"
+display_name = "Graphite Mono"
+disable_vinyl_thumbnail = true
+
+[colors]
+background = "#2B2D31"
+
+panel = "#32343A"
+panel_low = "#2A2C31"
+accent = "#7b8bb2"
+accent_hover = "#9aa7c9"
+accent_active = "#bac4d9"
+text_primary = "#F3F4F6"
+text_secondary = "#A1A5AD"
+text_on_accent = "#1F2933"
+slider_track_bg = "#3F4248"
+outline = "rgba(0, 0, 0, 0.35)"
+shadow = "rgba(0, 0, 0, 0.45)"
+
+[vars]
+radius = "20"
+panel_border_radius = "24"
+border_width = "0"
+slider_thumb_radius = "9"
+icon_scale = "1.0"
+body_size = "16"
+title_size = "26"
+
+[components.root]
+foreground = "{colors.text_primary}"
+border_color = "transparent"
+border_radius = "{vars.radius}"
+border_width = "{vars.border_width}"
+
+
+
+[components.panel]
+foreground = "{colors.text_primary}"
+border_color = "transparent"
+border_radius = "{vars.panel_border_radius}"
+border_width = "{vars.border_width}"
+
+
+[components.button]
+background = "#3c4150"
+foreground = "{colors.text_primary}"
+hover_background = "#4a4f60"
+active_background = "#565b6d"
+border_color = "rgba(123, 139, 178, 0.55)"
+border_radius = "28"
+border_width = "1.4"
+
+[components.button.icon]
+color = "{colors.text_primary}"
+size_scale = "1.0"
+
+[components.slider]
+track_fill = "{colors.accent}"
+track_background = "{colors.slider_track_bg}"
+track_thickness = "7"
+thumb_shape = "circle"
+thumb_color = "{colors.accent}"
+thumb_radius = "{vars.slider_thumb_radius}"
+
+[components.thumbnail]
+corner_radius = "{vars.panel_border_radius}"
+stroke_color = "transparent"
+stroke_width = "0"
+overlay_images = [{ path = "soy.jpg", offset_x = "0", offset_y = "23" }]
+
+
+
+[components.text.title]
+color = "{colors.text_primary}"
+size = "{vars.title_size}"
+
+[components.text.body]
+color = "{colors.text_secondary}"
+size = "{vars.body_size}"

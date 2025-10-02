@@ -1,0 +1,6 @@
+[ui]
+[ui.vinyl_thumbnail]
+# This will be automatically set based on the current skin's prefer_vinyl_thumbnail flag
+enabled = false
+swirl_strength = 2.5
+label_ratio = 0.35

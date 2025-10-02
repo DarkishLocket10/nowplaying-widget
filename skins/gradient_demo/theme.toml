@@ -1,0 +1,92 @@
+[meta]
+engine = "1"
+name = "gradient_demo"
+display_name = "Aurora Gradient"
+disable_vinyl_thumbnail = true
+
+[colors]
+background_top = "#231537"
+background_bottom = "#060914"
+panel_left = "#1d2038"
+panel_right = "#332459"
+accent = "#6dd6ff"
+accent_hover = "#8ce6ff"
+accent_active = "#48bdf0"
+text_primary = "#f7f9ff"
+text_secondary = "#c5c9f5"
+text_on_accent = "#041017"
+slider_track_bg = "#3a3f66"
+outline = "rgba(0, 0, 0, 0.35)"
+shadow = "rgba(0, 0, 0, 0.55)"
+
+[vars]
+radius = "20"
+panel_radius = "28"
+border_width = "0"
+slider_thumb_radius = "9"
+icon_scale = "0.85"
+body_size = "16"
+title_size = "28"
+
+[components.root]
+border_show = true
+foreground = "{colors.text_primary}"
+border_color = "transparent"
+border_radius = "{vars.radius}"
+border_width = "{vars.border_width}"
+
+
+[components.root.background]
+kind = "gradient"
+start = "{colors.background_top}"
+end = "{colors.background_bottom}"
+direction = "horizontal"
+
+[components.panel]
+border_show = true
+foreground = "{colors.text_primary}"
+border_color = "transparent"
+border_radius = "{vars.panel_radius}"
+border_width = "{vars.border_width}"
+
+
+[components.panel.background]
+kind = "gradient"
+start = "{colors.panel_left}"
+end = "{colors.panel_right}"
+direction = "horizontal"
+
+[components.button]
+background = "#262c4d"
+foreground = "{colors.text_primary}"
+hover_background = "#303663"
+active_background = "#1f2342"
+border_color = "rgba(109, 214, 255, 0.55)"
+border_radius = "18"
+border_width = "1.0"
+
+[components.button.icon]
+color = "{colors.text_primary}"
+size_scale = "{vars.icon_scale}"
+
+[components.slider]
+track_fill = "{colors.accent}"
+track_background = "{colors.slider_track_bg}"
+track_thickness = "6"
+thumb_shape = "circle"
+thumb_color = "{colors.accent}"
+thumb_radius = "{vars.slider_thumb_radius}"
+
+[components.thumbnail]
+corner_radius = "{vars.radius}"
+stroke_color = "rgba(109, 214, 255, 0.45)"
+stroke_width = "4"
+overlay_images = []
+
+[components.text.title]
+color = "{colors.text_primary}"
+size = "{vars.title_size}"
+
+[components.text.body]
+color = "{colors.text_secondary}"
+size = "{vars.body_size}"

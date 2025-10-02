@@ -1,0 +1,15 @@
+[package]
+name = "now_playing_gui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+eframe = "0.32"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+notify = "6"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "bmp", "ico", "webp"] }
+futures = "0.3"
+windows = { version = "0.62", features = ["Foundation", "Media", "Media_Control", "Storage", "Storage_Streams", "UI_ViewManagement", "Win32_Foundation", "Win32_Graphics_Dwm", "Win32_System_Com", "Win32_System_WinRT"] }
+raw-window-handle = "0.6"

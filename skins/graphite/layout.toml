@@ -1,0 +1,76 @@
+[meta]
+engine = "1"
+
+[layout]
+default = "graphite_standard"
+
+[[layout.variants]]
+id = "graphite_standard"
+display_name = "Graphite Centered"
+
+[layout.variants.structure]
+type = "column"
+spacing = 1
+align = "center"
+fill = true
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "thumbnail"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 1
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "timeline"
+  [layout.variants.structure.children.params]
+  centered = "true"
+  separator = "false"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 1
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "metadata.artist"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "title"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "metadata.album"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 4
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "playback_controls"
+  [layout.variants.structure.children.params]
+  centered = "true"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 12
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "skin_warnings"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "skin_error"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "thumbnail_error"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "error"
