@@ -15,6 +15,10 @@ align = "center"
 fill = true
 
 [[layout.variants.structure.children]]
+type = "spacer"
+size = 12
+
+[[layout.variants.structure.children]]
 type = "component"
 id = "thumbnail"
 

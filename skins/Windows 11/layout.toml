@@ -1,0 +1,158 @@
+[meta]
+# Fluent-style layouts mirroring contemporary Windows 11 shell spacing.
+engine = "1"
+
+[layout]
+default = "win11_signature"
+
+[[layout.variants]]
+id = "win11_signature"
+display_name = "Signature Paned"
+
+[layout.variants.structure]
+type = "row"
+spacing = 32
+align = "center"
+fill = true
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "thumbnail"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 12
+
+[[layout.variants.structure.children]]
+type = "column"
+spacing = 18
+align = "start"
+fill = true
+
+    [[layout.variants.structure.children.children]]
+    type = "component"
+    id = "title"
+
+    [[layout.variants.structure.children.children]]
+    type = "component"
+    id = "metadata_artist"
+
+    [[layout.variants.structure.children.children]]
+    type = "component"
+    id = "metadata_album"
+
+    [[layout.variants.structure.children.children]]
+    type = "component"
+    id = "metadata_state"
+        [layout.variants.structure.children.children.params]
+        show_label = "false"
+
+    [[layout.variants.structure.children.children]]
+    type = "spacer"
+    size = 6
+
+    [[layout.variants.structure.children.children]]
+    type = "component"
+    id = "timeline"
+        [layout.variants.structure.children.children.params]
+        centered = "false"
+        separator = "true"
+
+    [[layout.variants.structure.children.children]]
+    type = "component"
+    id = "playback_controls"
+        [layout.variants.structure.children.children.params]
+        centered = "false"
+
+    [[layout.variants.structure.children.children]]
+    type = "spacer"
+    size = 12
+
+    [[layout.variants.structure.children.children]]
+    type = "component"
+    id = "skin_warnings"
+
+    [[layout.variants.structure.children.children]]
+    type = "component"
+    id = "skin_error"
+
+    [[layout.variants.structure.children.children]]
+    type = "component"
+    id = "thumbnail_error"
+
+    [[layout.variants.structure.children.children]]
+    type = "component"
+    id = "error"
+
+[[layout.variants]]
+id = "win11_compact"
+display_name = "Compact Stack"
+
+[layout.variants.structure]
+type = "column"
+spacing = 18
+align = "center"
+fill = true
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "thumbnail"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 12
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "title"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "metadata_artist"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "metadata_album"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "metadata_state"
+    [layout.variants.structure.children.params]
+    show_label = "false"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 6
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "timeline"
+    [layout.variants.structure.children.params]
+    centered = "false"
+    separator = "false"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "playback_controls"
+    [layout.variants.structure.children.params]
+    centered = "true"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 10
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "skin_warnings"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "skin_error"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "thumbnail_error"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "error"

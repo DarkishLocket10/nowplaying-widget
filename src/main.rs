@@ -11,7 +11,8 @@ use crate::{
     vinyl::{render_vinyl, VinylSpin, VinylThumbnailOptions},
 };
 use eframe::egui::{
-    self, Align2, ColorImage, CornerRadius, LayerId, TextureHandle, TextureOptions,
+    self, Align2, ColorImage, CornerRadius, FontId, LayerId, PointerButton, ResizeDirection,
+    TextureHandle, TextureOptions, UiBuilder, ViewportCommand, WindowLevel, ViewportBuilder,
 };
 use futures::executor::block_on;
 #[cfg(target_os = "windows")]
@@ -53,7 +54,8 @@ use windows::Win32::{
     Foundation::HWND,
     Graphics::Dwm::{
         DwmSetWindowAttribute, DWMWA_BORDER_COLOR, DWMWA_CAPTION_COLOR, DWMWA_TEXT_COLOR,
-        DWMWA_USE_IMMERSIVE_DARK_MODE,
+        DWMWA_USE_IMMERSIVE_DARK_MODE, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_DEFAULT,
+        DWMWCP_ROUND,
     },
 };
 
@@ -61,8 +63,6 @@ const TICKS_PER_SECOND: f64 = 10_000_000.0;
 
 const PLAYBACK_CONTROLS_MAX_WIDTH: f32 = 420.0;
 const PLAYBACK_CONTROL_SPACING_X: f32 = 12.0;
-const PLAYBACK_CONTROL_SPACING_Y: f32 = 8.0;
-
 const TIMELINE_PADDING_RATIO: f32 = 0.06;
 const TIMELINE_PADDING_MIN: f32 = 12.0;
 const TIMELINE_PADDING_MAX: f32 = 32.0;
@@ -323,6 +323,22 @@ enum PlaybackButtonKind {
     Previous,
     PlayPause,
     Next,
+}
+
+#[derive(Clone, Copy)]
+enum ThumbnailOverlayAction {
+    Previous,
+    Play,
+    Pause,
+    Next,
+}
+
+#[derive(Clone, Copy)]
+struct ThumbnailOverlayGeometry {
+    rect: egui::Rect,
+    icon_slot: f32,
+    icon_spacing: f32,
+    height: f32,
 }
 
 fn time_span_to_secs(span: TimeSpan) -> f64 {
@@ -736,6 +752,13 @@ struct App {
     skin_error: Option<String>,
     watch_skins: bool,
     settings_panel_open: bool,
+    always_on_top: bool,
+    last_window_level: Option<WindowLevel>,
+    window_decorations_hidden: bool,
+    last_window_decorations: Option<bool>,
+    show_pin_button: bool,
+    viewport_size: egui::Vec2,
+    thumbnail_overlay_alpha: f32,
     config: Config,
     animations_enabled: bool,
     vinyl_spin: VinylSpin,
@@ -838,6 +861,13 @@ impl Default for App {
             skin_error,
             watch_skins: false,
             settings_panel_open: false,
+            always_on_top: false,
+            last_window_level: None,
+            window_decorations_hidden: false,
+            last_window_decorations: None,
+            show_pin_button: true,
+            viewport_size: egui::vec2(800.0, 600.0),
+            thumbnail_overlay_alpha: 0.0,
             config,
             animations_enabled,
             vinyl_spin,
@@ -863,8 +893,12 @@ impl Default for App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.skin_manager.apply_style(ctx);
+        self.update_window_decorations(ctx, frame);
         #[cfg(target_os = "windows")]
-        self.update_windows_titlebar(ctx, frame);
+        if !self.window_decorations_hidden {
+            self.update_windows_titlebar(ctx, frame);
+        }
+        self.update_window_level(ctx);
         self.maintain_skin_watcher(ctx);
 
         let mut snapshots = Vec::new();
@@ -937,13 +971,19 @@ impl eframe::App for App {
         };
 
         let root_rect = ctx.screen_rect();
-        let root_painter = ctx.layer_painter(LayerId::background());
-        paint_area_background(
-            &root_painter,
-            root_rect,
-            CornerRadius::same(0),
-            &root_background,
-        );
+        self.viewport_size = root_rect.size();
+        
+        let transparent_bg = theme.transparent_background;
+        
+        if !transparent_bg {
+            let root_painter = ctx.layer_painter(LayerId::background());
+            paint_area_background(
+                &root_painter,
+                root_rect,
+                CornerRadius::same(0),
+                &root_background,
+            );
+        }
 
         let mut panel_frame = egui::Frame::central_panel(&ctx.style());
         panel_frame.fill = egui::Color32::TRANSPARENT;
@@ -952,13 +992,16 @@ impl eframe::App for App {
             .frame(panel_frame)
             .show(ctx, |ui| {
                 let panel_rect = ui.max_rect();
-                let panel_painter = ui.painter();
-                paint_area_background(
-                    &panel_painter,
-                    panel_rect,
-                    CornerRadius::same(0),
-                    &panel_background,
-                );
+                
+                if !transparent_bg {
+                    let panel_painter = ui.painter();
+                    paint_area_background(
+                        &panel_painter,
+                        panel_rect,
+                        CornerRadius::same(0),
+                        &panel_background,
+                    );
+                }
 
                 ui.spacing_mut().item_spacing.y = 12.0;
 
@@ -966,6 +1009,8 @@ impl eframe::App for App {
                 //ui.separator();
                 self.render_now_playing(ui);
             });
+
+        self.handle_borderless_window_interactions(ctx, root_rect);
 
         self.maybe_request_snapshot();
         ctx.request_repaint_after(self.desired_repaint_interval());
@@ -1038,6 +1083,34 @@ impl App {
                 Err(_) => {
                     self.snapshot_request_tx = None;
                 }
+            }
+        }
+    }
+
+    fn update_window_level(&mut self, ctx: &egui::Context) {
+        let desired = if self.always_on_top {
+            WindowLevel::AlwaysOnTop
+        } else {
+            WindowLevel::Normal
+        };
+
+        if self.last_window_level != Some(desired) {
+            ctx.send_viewport_cmd(ViewportCommand::WindowLevel(desired));
+            self.last_window_level = Some(desired);
+        }
+    }
+
+    fn update_window_decorations(&mut self, ctx: &egui::Context, frame: &eframe::Frame) {
+        let desired = !self.window_decorations_hidden;
+        if self.last_window_decorations != Some(desired) {
+            ctx.send_viewport_cmd(ViewportCommand::Decorations(desired));
+            self.last_window_decorations = Some(desired);
+            #[cfg(target_os = "windows")]
+            {
+                if desired {
+                    self.titlebar_state = WindowsTitlebarState::default();
+                }
+                self.apply_windows_corner_preference(frame);
             }
         }
     }
@@ -1124,6 +1197,296 @@ impl App {
             self.titlebar_state.last_dark_mode = Some(dark_caption);
         }
     }
+
+    fn handle_borderless_window_interactions(
+        &mut self,
+        ctx: &egui::Context,
+        root_rect: egui::Rect,
+    ) {
+        if !self.window_decorations_hidden {
+            return;
+        }
+
+        let (pointer_pos, primary_pressed, primary_down) = ctx.input(|i| {
+            (
+                i.pointer.latest_pos(),
+                i.pointer.button_pressed(PointerButton::Primary),
+                i.pointer.primary_down(),
+            )
+        });
+
+        let Some(pos) = pointer_pos else {
+            return;
+        };
+
+        let edge = 6.0;
+        let drag_height = 36.0;
+
+        if !primary_down {
+            // Allow resizing when hovering near the border even if the pointer is just outside.
+            if !root_rect.expand(edge).contains(pos) {
+                return;
+            }
+        } else if !root_rect.expand(edge).contains(pos) {
+            return;
+        }
+
+        let near_left = pos.x <= root_rect.left() + edge;
+        let near_right = pos.x >= root_rect.right() - edge;
+        let near_top = pos.y <= root_rect.top() + edge;
+        let near_bottom = pos.y >= root_rect.bottom() - edge;
+
+        let resize_dir = if near_left && near_top {
+            Some(ResizeDirection::NorthWest)
+        } else if near_right && near_top {
+            Some(ResizeDirection::NorthEast)
+        } else if near_left && near_bottom {
+            Some(ResizeDirection::SouthWest)
+        } else if near_right && near_bottom {
+            Some(ResizeDirection::SouthEast)
+        } else if near_left {
+            Some(ResizeDirection::West)
+        } else if near_right {
+            Some(ResizeDirection::East)
+        } else if near_top {
+            Some(ResizeDirection::North)
+        } else if near_bottom {
+            Some(ResizeDirection::South)
+        } else {
+            None
+        };
+
+        if let Some(direction) = resize_dir {
+            let cursor = match direction {
+                ResizeDirection::North => egui::CursorIcon::ResizeNorth,
+                ResizeDirection::South => egui::CursorIcon::ResizeSouth,
+                ResizeDirection::East => egui::CursorIcon::ResizeEast,
+                ResizeDirection::West => egui::CursorIcon::ResizeWest,
+                ResizeDirection::NorthEast => egui::CursorIcon::ResizeNorthEast,
+                ResizeDirection::SouthEast => egui::CursorIcon::ResizeSouthEast,
+                ResizeDirection::NorthWest => egui::CursorIcon::ResizeNorthWest,
+                ResizeDirection::SouthWest => egui::CursorIcon::ResizeSouthWest,
+            };
+            ctx.set_cursor_icon(cursor);
+            if primary_pressed && !ctx.is_using_pointer() {
+                ctx.send_viewport_cmd(ViewportCommand::BeginResize(direction));
+            }
+            return;
+        }
+
+        // Drag zone across the top excluding the overlay controls.
+        let icon_size = ctx
+            .style()
+            .text_styles
+            .get(&egui::TextStyle::Body)
+            .map(|style| style.size)
+            .unwrap_or(14.0);
+        let icon_extent = icon_size + 8.0;
+        let icon_spacing = 6.0;
+        let icon_count = 1 + usize::from(self.show_pin_button);
+        let overlay_width = if icon_count > 0 {
+            icon_count as f32 * icon_extent + (icon_count.saturating_sub(1) as f32) * icon_spacing
+        } else {
+            0.0
+        };
+        let overlay_rect = egui::Rect::from_min_size(
+            egui::pos2(root_rect.left() + 8.0, root_rect.top() + 8.0),
+            egui::vec2(overlay_width, icon_extent),
+        );
+
+        let in_drag_strip = pos.y <= root_rect.top() + drag_height
+            && !overlay_rect.contains(pos)
+            && root_rect.contains(pos);
+
+        if in_drag_strip {
+            ctx.set_cursor_icon(egui::CursorIcon::Move);
+            if primary_pressed && !ctx.is_using_pointer() {
+                ctx.send_viewport_cmd(ViewportCommand::StartDrag);
+            }
+        }
+    }
+
+    fn thumbnail_overlay_geometry(
+        &self,
+        rect: egui::Rect,
+        icon_count: usize,
+    ) -> Option<ThumbnailOverlayGeometry> {
+        if icon_count == 0 {
+            return None;
+        }
+
+        let icon_count_f = icon_count as f32;
+        let available_width = (rect.width() - 20.0).max(60.0);
+        let icon_slot = (available_width / icon_count_f).clamp(18.0, 44.0);
+        let icon_spacing = (icon_slot * 0.2).clamp(4.0, 12.0);
+        let overlay_width = icon_slot * icon_count_f + icon_spacing * (icon_count_f - 1.0);
+        let overlay_height = icon_slot + 6.0;
+
+        let mut center_y = rect.max.y - overlay_height * 0.5 - 8.0;
+        let min_y = rect.min.y + overlay_height * 0.5 + 6.0;
+        if center_y < min_y {
+            center_y = rect.center().y;
+        }
+
+        let mut overlay_rect = egui::Rect::from_center_size(
+            egui::pos2(rect.center().x, center_y),
+            egui::vec2(overlay_width, overlay_height),
+        );
+
+        if overlay_rect.max.y > rect.max.y - 4.0 {
+            let shift = overlay_rect.max.y - (rect.max.y - 4.0);
+            overlay_rect = overlay_rect.translate(egui::vec2(0.0, -shift));
+        }
+        if overlay_rect.min.y < rect.min.y + 4.0 {
+            let shift = (rect.min.y + 4.0) - overlay_rect.min.y;
+            overlay_rect = overlay_rect.translate(egui::vec2(0.0, shift));
+        }
+
+        Some(ThumbnailOverlayGeometry {
+            rect: overlay_rect,
+            icon_slot,
+            icon_spacing,
+            height: overlay_height,
+        })
+    }
+
+    fn adjust_thumbnail_overlay_alpha(&mut self, target: f32, ctx: &egui::Context) -> f32 {
+        let target = target.clamp(0.0, 1.0);
+        let new_alpha = egui::lerp(self.thumbnail_overlay_alpha..=target, 0.2);
+        if (new_alpha - target).abs() > 0.01 {
+            ctx.request_repaint();
+        }
+        self.thumbnail_overlay_alpha = new_alpha;
+        new_alpha
+    }
+
+    fn draw_thumbnail_overlay(
+        &mut self,
+        ui: &mut egui::Ui,
+        geometry: ThumbnailOverlayGeometry,
+        alpha: f32,
+    ) {
+        let visuals = ui.visuals().clone();
+        
+        // Show play or pause based on current state
+        let play_pause_action = if self.now.state == PlayState::Playing {
+            ThumbnailOverlayAction::Pause
+        } else {
+            ThumbnailOverlayAction::Play
+        };
+        let play_pause_icon = if self.now.state == PlayState::Playing {
+            "⏸"
+        } else {
+            "⏵"
+        };
+        
+        let icons = [
+            (ThumbnailOverlayAction::Previous, "⏮"),
+            (play_pause_action, play_pause_icon),
+            (ThumbnailOverlayAction::Next, "⏭"),
+        ];
+
+        let background_alpha = (alpha * 110.0).round() as u8;
+        if background_alpha > 0 {
+            let bg_color = egui::Color32::from_rgba_unmultiplied(15, 23, 42, background_alpha);
+            let rounding = CornerRadius::same((geometry.height / 2.0).round() as u8);
+            ui.painter_at(geometry.rect)
+                .rect_filled(geometry.rect, rounding, bg_color);
+        }
+
+        let overlay_id = ui.id().with("thumbnail.overlay");
+        let mut overlay_ui = ui.new_child(
+            UiBuilder::new()
+                .max_rect(geometry.rect)
+                .layout(egui::Layout::left_to_right(egui::Align::Center))
+                .id_salt(overlay_id),
+        );
+        overlay_ui.spacing_mut().item_spacing.x = geometry.icon_spacing;
+        overlay_ui.set_min_height(geometry.height);
+
+        for (action, symbol) in icons {
+            let (icon_rect, icon_response) = overlay_ui.allocate_exact_size(
+                egui::vec2(geometry.icon_slot, geometry.height),
+                egui::Sense::click(),
+            );
+
+            let mut icon_color = visuals.widgets.inactive.fg_stroke.color;
+
+            if icon_response.hovered() {
+                overlay_ui
+                    .ctx()
+                    .set_cursor_icon(egui::CursorIcon::PointingHand);
+                icon_color = visuals.hyperlink_color;
+            }
+
+            let icon_color = icon_color.gamma_multiply(alpha);
+            overlay_ui.painter().text(
+                icon_rect.center(),
+                egui::Align2::CENTER_CENTER,
+                symbol,
+                FontId::proportional(geometry.icon_slot * 0.65),
+                icon_color,
+            );
+
+            if icon_response.clicked() {
+                self.handle_thumbnail_overlay_action(action);
+            }
+        }
+    }
+
+    fn handle_thumbnail_overlay_action(&mut self, action: ThumbnailOverlayAction) {
+        match action {
+            ThumbnailOverlayAction::Previous => {
+                self.playback_command("Previous", |session| {
+                    block_on_operation(session.TrySkipPreviousAsync()?)
+                });
+            }
+            ThumbnailOverlayAction::Next => {
+                self.playback_command("Next", |session| {
+                    block_on_operation(session.TrySkipNextAsync()?)
+                });
+            }
+            ThumbnailOverlayAction::Play => {
+                self.playback_command("Play", |session| {
+                    block_on_operation(session.TryPlayAsync()?)
+                });
+            }
+            ThumbnailOverlayAction::Pause => {
+                self.playback_command("Pause", |session| {
+                    block_on_operation(session.TryPauseAsync()?)
+                });
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    fn apply_windows_corner_preference(&self, frame: &eframe::Frame) {
+        let Ok(window_handle) = frame.window_handle() else {
+            return;
+        };
+        let hwnd = match window_handle.as_raw() {
+            RawWindowHandle::Win32(handle) => HWND(handle.hwnd.get() as *mut std::ffi::c_void),
+            _ => return,
+        };
+
+        let preference = if self.window_decorations_hidden {
+            DWMWCP_ROUND
+        } else {
+            DWMWCP_DEFAULT
+        };
+
+        unsafe {
+            let _ = DwmSetWindowAttribute(
+                hwnd,
+                DWMWA_WINDOW_CORNER_PREFERENCE,
+                &preference as *const _ as *const _,
+                std::mem::size_of_val(&preference) as u32,
+            );
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    fn apply_windows_corner_preference(&self, _frame: &eframe::Frame) {}
 
     #[allow(dead_code)]
     fn is_mobile_stack_layout(&self) -> bool {
@@ -1224,129 +1587,388 @@ impl App {
         let mut requested_skin: Option<String> = None;
         let mut requested_layout: Option<String> = None;
 
-        ui.add_space(4.0);
-        let button_size = 30.0;
-        ui.horizontal(|row| {
-            row.spacing_mut().item_spacing.x = 8.0;
-            let (icon, hover_text) = if self.settings_panel_open {
-                ("⚙", "Hide settings")
-            } else {
-                ("⚙", "Show settings")
-            };
-            let icon_size = row
-                .style()
-                .text_styles
-                .get(&egui::TextStyle::Button)
-                .map(|style| style.size)
-                .unwrap_or(16.0)
-                .max(16.0);
-            let visuals = &row.style().visuals.widgets.inactive;
-            let button = egui::Button::new(egui::RichText::new(icon).size(icon_size))
-                .min_size(egui::Vec2::splat(button_size))
-                .fill(visuals.bg_fill)
-                .stroke(egui::Stroke::new(
-                    visuals.fg_stroke.width,
-                    visuals.fg_stroke.color,
-                ))
-                .corner_radius(CornerRadius::same((button_size / 2.0).round() as u8));
-            let response = row.add(button).on_hover_text(hover_text);
-            if response.clicked() {
-                self.settings_panel_open = !self.settings_panel_open;
-            }
-            //row.label(egui::RichText::new("Settings").strong());
-        });
+        const SETTINGS_PANEL_MAX_WIDTH: f32 = 360.0;
+        const SETTINGS_PANEL_ITEM_SPACING: f32 = 18.0;
+        const SETTINGS_CONTROL_SPACING: f32 = 12.0;
+        const SETTINGS_SECTION_GAP: f32 = 24.0;
+        const SETTINGS_HEADER_GAP: f32 = 8.0;
+        const SETTINGS_PANEL_PADDING_X: i8 = 20;
+        const SETTINGS_PANEL_PADDING_Y: i8 = 18;
+        const SETTINGS_PANEL_CORNER_RADIUS: u8 = 14;
 
-        if self.settings_panel_open {
-            ui.add_space(8.0);
-            egui::Frame::group(ui.style()).show(ui, |panel| {
-                panel.spacing_mut().item_spacing.y = 14.0;
-                panel.vertical(|col| {
-                    col.spacing_mut().item_spacing.y = 14.0;
+        fn settings_section<R>(
+            ui: &mut egui::Ui,
+            visuals: &egui::Visuals,
+            title: &str,
+            header_gap: f32,
+            control_spacing: f32,
+            content_width: f32,
+            build: impl FnOnce(&mut egui::Ui) -> R,
+        ) -> R {
+            ui.label(
+                egui::RichText::new(title)
+                    .size(13.0)
+                    .color(visuals.strong_text_color()),
+            );
+            ui.add_space(header_gap);
+            ui.vertical(|section| {
+                section.set_min_width(content_width);
+                section.set_max_width(content_width);
+                section.spacing_mut().item_spacing = egui::vec2(0.0, control_spacing);
+                build(section)
+            })
+            .inner
+        }
 
-                    col.label("Skin");
-                    egui::ComboBox::from_id_salt("skin-select")
-                        .selected_text(current_skin_display.clone())
-                        .show_ui(col, |combo| {
-                            if skins.is_empty() {
-                                combo.label("Embedded default");
-                            } else {
-                                for (id, name) in &skins {
-                                    let selected = current_skin_id
-                                        .as_deref()
-                                        .map(|current| current == id.as_str())
-                                        .unwrap_or(false);
-                                    if combo.selectable_label(selected, name).clicked() && !selected
-                                    {
-                                        requested_skin = Some(id.clone());
-                                    }
-                                }
+        fn settings_separator(ui: &mut egui::Ui, gap: f32) {
+            ui.add_space(gap * 0.5);
+            ui.separator();
+            ui.add_space(gap * 0.5);
+        }
+
+        egui::Area::new(egui::Id::new("overlay-controls"))
+            .anchor(egui::Align2::LEFT_TOP, egui::vec2(8.0, 8.0))
+            .order(egui::Order::Foreground)
+            .interactable(true)
+            .movable(false)
+            .show(ui.ctx(), |overlay| {
+                overlay.spacing_mut().item_spacing.x = 6.0;
+                overlay.horizontal(|row| {
+                    row.spacing_mut().item_spacing.x = 6.0;
+
+                    let overlay_icon_button =
+                        |ui: &mut egui::Ui, icon: &str, tooltip: &str, active: bool| {
+                            let icon_size = ui
+                                .style()
+                                .text_styles
+                                .get(&egui::TextStyle::Body)
+                                .map(|style| style.size)
+                                .unwrap_or(14.0);
+                            let desired_size = egui::Vec2::splat(icon_size + 8.0);
+                            let (rect, response) =
+                                ui.allocate_exact_size(desired_size, egui::Sense::click());
+
+                            if response.hovered() {
+                                ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
                             }
-                        });
 
-                    if layout_options.len() > 1 {
-                        col.label("Layout");
-                        egui::ComboBox::from_id_salt("layout-select")
-                            .selected_text(current_layout_display.clone())
-                            .show_ui(col, |combo| {
-                                for option in &layout_options {
-                                    let selected = option.id == current_layout_id;
-                                    if combo
-                                        .selectable_label(selected, &option.display_name)
-                                        .clicked()
-                                        && !selected
-                                    {
-                                        requested_layout = Some(option.id.clone());
-                                    }
-                                }
-                            });
-                    } else if let Some(option) = layout_options.first() {
-                        col.label(format!("Layout: {}", option.display_name));
-                    }
+                            let visuals = ui.visuals();
+                            let fg_color = if active {
+                                visuals.widgets.active.fg_stroke.color
+                            } else {
+                                visuals.widgets.inactive.fg_stroke.color
+                            };
 
-                    let theme_disables_vinyl =
-                        self.skin_manager.current_theme().disable_vinyl_thumbnail;
-                    col.label("Artwork");
-                    if theme_disables_vinyl {
-                        col.label("This skin always shows the original album art.");
-                    } else {
-                        let mut vinyl_enabled = self.config.ui.vinyl_thumbnail.enabled;
-                        if col
-                            .checkbox(&mut vinyl_enabled, "Show spinning vinyl disc")
-                            .on_hover_text(
-                                "Toggle between the animated vinyl and the original thumbnail.",
-                            )
-                            .changed()
-                        {
-                            self.set_vinyl_enabled(ctx, vinyl_enabled);
-                        }
-                        col.label("Tip: You can also click the artwork to switch views.");
-                    }
+                            ui.painter_at(rect).text(
+                                rect.center(),
+                                egui::Align2::CENTER_CENTER,
+                                icon,
+                                egui::FontId::proportional(icon_size),
+                                fg_color,
+                            );
 
-                    col.horizontal_wrapped(|row| {
-                        row.spacing_mut().item_spacing.x = 12.0;
-                        let toggle_label = if self.watch_skins {
-                            "Disable hot reload"
-                        } else {
-                            "Enable hot reload"
+                            response.on_hover_text(tooltip)
                         };
-                        if self.skin_manager.skin_button(row, toggle_label).clicked() {
-                            self.watch_skins = !self.watch_skins;
-                        }
 
-                        if self
-                            .skin_manager
-                            .skin_button(row, "Reload skins")
-                            .on_hover_text("Re-scan the skin directory")
+                    if self.show_pin_button {
+                        let pin_icon = if self.always_on_top { "📌" } else { "📍" };
+                        let pin_tooltip = if self.always_on_top {
+                            "Unpin window"
+                        } else {
+                            "Pin window (stay on top)"
+                        };
+                        if overlay_icon_button(row, pin_icon, pin_tooltip, self.always_on_top)
                             .clicked()
                         {
-                            match self.reload_skins(ctx) {
-                                Ok(()) => self.skin_error = None,
-                                Err(err) => self.skin_error = Some(err),
-                            }
+                            self.always_on_top = !self.always_on_top;
                         }
-                    });
+                    }
+
+                    let gear_tooltip = if self.settings_panel_open {
+                        "Hide settings"
+                    } else {
+                        "Show settings"
+                    };
+                    if overlay_icon_button(row, "⚙", gear_tooltip, self.settings_panel_open)
+                        .clicked()
+                    {
+                        self.settings_panel_open = !self.settings_panel_open;
+                    }
                 });
             });
+
+        if self.settings_panel_open {
+            let visuals = ctx.style().visuals.clone();
+            
+            let mut window_frame = egui::Frame::window(&ctx.style());
+            window_frame.inner_margin = egui::Margin {
+                left: SETTINGS_PANEL_PADDING_X,
+                right: SETTINGS_PANEL_PADDING_X,
+                top: SETTINGS_PANEL_PADDING_Y,
+                bottom: SETTINGS_PANEL_PADDING_Y,
+            };
+            window_frame.corner_radius = CornerRadius::same(SETTINGS_PANEL_CORNER_RADIUS);
+            window_frame.shadow = egui::Shadow {
+                offset: [0, 6],
+                blur: 28,
+                spread: 4,
+                color: if visuals.dark_mode {
+                    egui::Color32::from_rgba_unmultiplied(0, 0, 0, 120)
+                } else {
+                    egui::Color32::from_rgba_unmultiplied(0, 0, 0, 72)
+                },
+            };
+            window_frame.fill = if visuals.dark_mode {
+                egui::Color32::from_rgba_unmultiplied(28, 28, 32, 240)
+            } else {
+                egui::Color32::from_rgba_unmultiplied(244, 246, 249, 245)
+            };
+
+            egui::Window::new("Settings")
+                .id(egui::Id::new("settings-window"))
+                .collapsible(false)
+                .resizable(false)
+                .title_bar(false)
+                .frame(window_frame)
+                .fixed_size([SETTINGS_PANEL_MAX_WIDTH, 0.0])
+                .show(ctx, |panel| {
+                    let content_width = SETTINGS_PANEL_MAX_WIDTH - 2.0 * f32::from(SETTINGS_PANEL_PADDING_X);
+                    panel.set_min_width(SETTINGS_PANEL_MAX_WIDTH);
+                    panel.set_max_width(SETTINGS_PANEL_MAX_WIDTH);
+                    panel.spacing_mut().item_spacing = egui::vec2(0.0, SETTINGS_PANEL_ITEM_SPACING);
+
+                        panel.horizontal(|row| {
+                            row.spacing_mut().item_spacing.x = 12.0;
+                            row.label(egui::RichText::new("Settings").heading());
+
+                            row.allocate_ui_with_layout(
+                                egui::vec2(row.available_width(), 0.0),
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |actions| {
+                                    let close_icon = egui::RichText::new("×").size(18.0);
+                                    let close = actions
+                                        .add(
+                                            egui::Label::new(close_icon)
+                                                .sense(egui::Sense::click()),
+                                        )
+                                        .on_hover_text("Close settings");
+                                    if close.hovered() {
+                                        actions.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                                    }
+                                    if close.clicked() {
+                                        self.settings_panel_open = false;
+                                    }
+                                },
+                            );
+                        });
+
+                        panel.separator();
+
+                        egui::ScrollArea::vertical()
+                            .max_height(420.0)
+                            .show(panel, |scroll| {
+                                scroll.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
+                                scroll.set_min_width(content_width);
+                                scroll.set_max_width(content_width);
+
+                                settings_section(
+                                    scroll,
+                                    &visuals,
+                                    "Window",
+                                    SETTINGS_HEADER_GAP,
+                                    SETTINGS_CONTROL_SPACING,
+                                    content_width,
+                                    |section| {
+                                        let toggle_label = if self.window_decorations_hidden {
+                                            "Show window title bar"
+                                        } else {
+                                            "Hide window title bar"
+                                        };
+                                        if self
+                                            .skin_manager
+                                            .skin_button(section, toggle_label)
+                                            .clicked()
+                                        {
+                                            self.window_decorations_hidden =
+                                                !self.window_decorations_hidden;
+                                        }
+
+                                        let pin_toggle_label = if self.always_on_top {
+                                            "Disable stay-on-top"
+                                        } else {
+                                            "Pin window (stay on top)"
+                                        };
+                                        if self
+                                            .skin_manager
+                                            .skin_button(section, pin_toggle_label)
+                                            .on_hover_text(
+                                                "Keep the widget above other application windows.",
+                                            )
+                                            .clicked()
+                                        {
+                                            self.always_on_top = !self.always_on_top;
+                                        }
+
+                                        let mut show_pin_button = self.show_pin_button;
+                                        if section
+                                            .checkbox(
+                                                &mut show_pin_button,
+                                                "Show pin button in overlay",
+                                            )
+                                            .on_hover_text(
+                                                "Disable to hide the pin toggle from the top overlay.",
+                                            )
+                                            .changed()
+                                        {
+                                            self.show_pin_button = show_pin_button;
+                                        }
+
+                                        section.label(
+                                            if self.window_decorations_hidden {
+                                                "Title bar hidden. Use the app body to drag the window."
+                                            } else {
+                                                "Hiding the title bar removes the OS chrome."
+                                            },
+                                        );
+                                    },
+                                );
+
+                                settings_separator(scroll, SETTINGS_SECTION_GAP);
+
+                                settings_section(
+                                    scroll,
+                                    &visuals,
+                                    "Appearance",
+                                    SETTINGS_HEADER_GAP,
+                                    SETTINGS_CONTROL_SPACING,
+                                    content_width,
+                                    |section| {
+                                        let combo_width = content_width;
+                                        egui::ComboBox::from_id_salt("skin-select")
+                                            .width(combo_width)
+                                            .selected_text(current_skin_display.clone())
+                                            .show_ui(section, |combo| {
+                                                if skins.is_empty() {
+                                                    combo.label("Embedded default");
+                                                } else {
+                                                    for (id, name) in &skins {
+                                                        let selected = current_skin_id
+                                                            .as_deref()
+                                                            .map(|current| current == id.as_str())
+                                                            .unwrap_or(false);
+                                                        if combo
+                                                            .selectable_label(selected, name)
+                                                            .clicked()
+                                                            && !selected
+                                                        {
+                                                            requested_skin = Some(id.clone());
+                                                        }
+                                                    }
+                                                }
+                                            });
+
+                                        if layout_options.len() > 1 {
+                                            egui::ComboBox::from_id_salt("layout-select")
+                                                .width(combo_width)
+                                                .selected_text(current_layout_display.clone())
+                                                .show_ui(section, |combo| {
+                                                    for option in &layout_options {
+                                                        let selected = option.id == current_layout_id;
+                                                        if combo
+                                                            .selectable_label(
+                                                                selected,
+                                                                &option.display_name,
+                                                            )
+                                                            .clicked()
+                                                            && !selected
+                                                        {
+                                                            requested_layout = Some(option.id.clone());
+                                                        }
+                                                    }
+                                                });
+                                        } else if let Some(option) = layout_options.first() {
+                                            section.label(
+                                                format!("Layout: {}", option.display_name),
+                                            );
+                                        }
+                                    },
+                                );
+
+                                settings_separator(scroll, SETTINGS_SECTION_GAP);
+
+                                settings_section(
+                                    scroll,
+                                    &visuals,
+                                    "Artwork",
+                                    SETTINGS_HEADER_GAP,
+                                    SETTINGS_CONTROL_SPACING,
+                                    content_width,
+                                    |section| {
+                                        let theme_disables_vinyl = self
+                                            .skin_manager
+                                            .current_theme()
+                                            .disable_vinyl_thumbnail;
+                                        if theme_disables_vinyl {
+                                            section.label(
+                                                "This skin always shows the original album art.",
+                                            );
+                                        } else {
+                                            let mut vinyl_enabled =
+                                                self.config.ui.vinyl_thumbnail.enabled;
+                                            if section
+                                                .checkbox(&mut vinyl_enabled, "Show spinning vinyl disc")
+                                                .on_hover_text(
+                                                    "Toggle between the animated vinyl and the original thumbnail.",
+                                                )
+                                                .changed()
+                                            {
+                                                self.set_vinyl_enabled(ctx, vinyl_enabled);
+                                            }
+                                            section.label(
+                                                "Tip: You can also click the artwork to switch views.",
+                                            );
+                                        }
+                                    },
+                                );
+
+                                settings_separator(scroll, SETTINGS_SECTION_GAP);
+
+                                settings_section(
+                                    scroll,
+                                    &visuals,
+                                    "Skins",
+                                    SETTINGS_HEADER_GAP,
+                                    SETTINGS_CONTROL_SPACING,
+                                    content_width,
+                                    |section| {
+                                        section.horizontal_wrapped(|row| {
+                                            row.spacing_mut().item_spacing =
+                                                egui::vec2(12.0, SETTINGS_CONTROL_SPACING);
+                                            let toggle_label = if self.watch_skins {
+                                                "Disable hot reload"
+                                            } else {
+                                                "Enable hot reload"
+                                            };
+                                            if self.skin_manager.skin_button(row, toggle_label).clicked() {
+                                                self.watch_skins = !self.watch_skins;
+                                            }
+
+                                            if self
+                                                .skin_manager
+                                                .skin_button(row, "Reload skins")
+                                                .on_hover_text("Re-scan the skin directory")
+                                                .clicked()
+                                            {
+                                                match self.reload_skins(ctx) {
+                                                    Ok(()) => self.skin_error = None,
+                                                    Err(err) => self.skin_error = Some(err),
+                                                }
+                                            }
+                                        });
+                                    },
+                                );
+                            });
+                });
         }
 
         if let Some(id) = requested_skin {
@@ -1531,14 +2153,21 @@ impl App {
             egui::Sense::click()
         };
 
+        let viewport_min_side = self.viewport_size.x.min(self.viewport_size.y);
+
         if let Some(texture) = primary_texture {
             let mut size = texture.size_vec2();
             if size.x > 0.0 && size.y > 0.0 {
-                let max_side = 220.0;
+                let width_limit = ui.available_width().max(140.0);
+                let view_limit = (viewport_min_side * 0.58).max(140.0);
+                let max_side = width_limit.min(view_limit).min(220.0);
                 let scale = (max_side / size.x).min(max_side / size.y).min(1.0);
                 size *= scale;
             } else {
-                size = egui::vec2(180.0, 180.0);
+                let width_limit = ui.available_width().max(140.0);
+                let view_limit = (viewport_min_side * 0.58).max(140.0);
+                let max_side = width_limit.min(view_limit).min(220.0);
+                size = egui::vec2(max_side, max_side);
             }
 
             let (rect, sense_response) = ui.allocate_exact_size(size, sense);
@@ -1595,6 +2224,34 @@ impl App {
                     response.on_hover_text("Current skin disables the spinning vinyl overlay.");
             }
 
+            let overlay_enabled =
+                size.x <= 200.0 || size.y <= 200.0 || ui.available_width() < 360.0;
+            let overlay_geometry = if overlay_enabled {
+                self.thumbnail_overlay_geometry(rect, 3)
+            } else {
+                None
+            };
+
+            let overlay_hovered = overlay_geometry
+                .as_ref()
+                .and_then(|geom| ui.ctx().pointer_latest_pos().map(|pos| geom.rect.contains(pos)))
+                .unwrap_or(false);
+
+            let alpha = self.adjust_thumbnail_overlay_alpha(
+                if overlay_enabled && (response.hovered() || overlay_hovered) {
+                    1.0
+                } else {
+                    0.0
+                },
+                ui.ctx(),
+            );
+
+            if alpha > 0.01 {
+                if let Some(geometry) = overlay_geometry {
+                    self.draw_thumbnail_overlay(ui, geometry, alpha);
+                }
+            }
+
             for (overlay, offset) in &overlay_textures {
                 let tex_size = overlay.size_vec2();
                 if tex_size.x <= 0.0 || tex_size.y <= 0.0 {
@@ -1617,7 +2274,10 @@ impl App {
                 ui.put(overlay_rect, overlay_widget);
             }
         } else {
-            let size = egui::vec2(180.0, 180.0);
+            let width_limit = ui.available_width().max(96.0);
+            let view_limit = (viewport_min_side * 0.55).max(96.0);
+            let max_side = width_limit.min(view_limit).min(220.0);
+            let size = egui::vec2(max_side, max_side);
             let (rect, _) = ui.allocate_exact_size(size, egui::Sense::hover());
 
             if stroke_width > 0.0 && stroke_color.a() > 0 {
@@ -1662,6 +2322,8 @@ impl App {
                     .corner_radius(rounding);
                 ui.put(overlay_rect, overlay_widget);
             }
+
+            self.adjust_thumbnail_overlay_alpha(0.0, ui.ctx());
         }
     }
 
@@ -1818,10 +2480,11 @@ impl App {
         };
 
         let button_width = (base_button_width * scale).clamp(60.0, base_button_width);
+        let button_height = (base_height * scale).clamp(28.0, base_height);
         let spacing = (PLAYBACK_CONTROL_SPACING_X * scale).clamp(6.0, PLAYBACK_CONTROL_SPACING_X);
-        let estimated_row_width = 3.0 * button_width + 2.0 * spacing;
+        let row_width = 3.0 * button_width + 2.0 * spacing;
 
-        let metrics = StripMetrics::from_content(available_width, estimated_row_width);
+        let metrics = StripMetrics::from_content(available_width, row_width);
         let align = if centered {
             egui::Align::Center
         } else {
@@ -1830,25 +2493,46 @@ impl App {
 
         metrics.show_anchored(ui, align, |inner| {
             inner.allocate_ui_with_layout(
-                egui::vec2(metrics.content_width(), base_height),
-                egui::Layout::left_to_right(egui::Align::Center).with_main_wrap(true),
+                egui::vec2(row_width, button_height),
+                egui::Layout::left_to_right(egui::Align::Center),
                 |row| {
-                    self.render_playback_buttons_row(row, scale);
+                    self.render_playback_buttons_row(
+                        row,
+                        scale,
+                        egui::vec2(button_width, button_height),
+                        spacing,
+                    );
                 },
             );
         });
     }
 
-    fn render_playback_buttons_row(&mut self, row: &mut egui::Ui, scale: f32) {
+    fn render_playback_buttons_row(
+        &mut self,
+        row: &mut egui::Ui,
+        scale: f32,
+        button_size: egui::Vec2,
+        button_spacing: f32,
+    ) {
         let scale = scale.clamp(0.6, 1.0);
-        let spacing = row.spacing_mut();
-        spacing.item_spacing.x =
-            (PLAYBACK_CONTROL_SPACING_X * scale).clamp(6.0, PLAYBACK_CONTROL_SPACING_X);
-        spacing.item_spacing.y = PLAYBACK_CONTROL_SPACING_Y;
+        row.set_height(button_size.y);
+        let spacing_cfg = row.spacing_mut();
+        spacing_cfg.item_spacing.x = button_spacing;
+        spacing_cfg.item_spacing.y = 0.0;
 
-        self.render_playback_button(row, PlaybackButtonKind::Previous, scale);
-        self.render_playback_button(row, PlaybackButtonKind::PlayPause, scale);
-        self.render_playback_button(row, PlaybackButtonKind::Next, scale);
+        for kind in [
+            PlaybackButtonKind::Previous,
+            PlaybackButtonKind::PlayPause,
+            PlaybackButtonKind::Next,
+        ] {
+            row.allocate_ui_with_layout(
+                button_size,
+                egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
+                |cell| {
+                    self.render_playback_button(cell, kind, scale);
+                },
+            );
+        }
     }
 
     fn render_playback_button(&mut self, ui: &mut egui::Ui, kind: PlaybackButtonKind, scale: f32) {
@@ -2477,7 +3161,11 @@ impl Drop for App {
 }
 
 fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let native_options = eframe::NativeOptions::default();
+    let native_options = eframe::NativeOptions {
+        viewport: ViewportBuilder::default()
+            .with_transparent(true),
+        ..Default::default()
+    };
     let run_res = eframe::run_native(
         "Now Playing",
         native_options,

@@ -26,6 +26,7 @@ pub struct Theme {
     pub vars: HashMap<String, f32>,
     pub use_gradient: bool,
     pub disable_vinyl_thumbnail: bool,
+    pub transparent_background: bool,
     pub components: Components,
 }
 
@@ -383,6 +384,7 @@ fn resolve_document(
         .unwrap_or_else(|| name.clone());
     let use_gradient = doc.use_gradient.unwrap_or(true);
     let disable_vinyl = doc.meta.disable_vinyl_thumbnail.unwrap_or(false);
+    let transparent_bg = doc.transparent_background.or(doc.meta.transparent_background).unwrap_or(false);
 
     Ok(Theme {
         name,
@@ -397,6 +399,7 @@ fn resolve_document(
         vars,
         use_gradient,
         disable_vinyl_thumbnail: disable_vinyl,
+        transparent_background: transparent_bg,
         components: Components {
             root,
             panel,
@@ -999,6 +1002,7 @@ struct ThemeDocument {
     colors: HashMap<String, String>,
     vars: HashMap<String, String>,
     use_gradient: Option<bool>,
+    transparent_background: Option<bool>,
     components: ComponentsConfig,
 }
 
@@ -1009,6 +1013,7 @@ struct MetaSection {
     name: Option<String>,
     display_name: Option<String>,
     disable_vinyl_thumbnail: Option<bool>,
+    transparent_background: Option<bool>,
 }
 
 #[derive(Clone, Deserialize)]
@@ -1154,6 +1159,7 @@ impl Default for ThemeDocument {
             colors: HashMap::new(),
             vars: HashMap::new(),
             use_gradient: None,
+            transparent_background: None,
             components: ComponentsConfig::default(),
         }
     }
@@ -1166,6 +1172,7 @@ impl Default for MetaSection {
             name: None,
             display_name: None,
             disable_vinyl_thumbnail: None,
+            transparent_background: None,
         }
     }
 }

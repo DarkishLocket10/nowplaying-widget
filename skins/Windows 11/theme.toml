@@ -1,0 +1,99 @@
+# Fluent Design palette tuned to match Windows 11 (2025) window chrome.
+use_gradient = true
+
+[meta]
+engine = "1"
+name = "windows11_fluent"
+display_name = "Fluent"
+disable_vinyl_thumbnail = true
+
+[colors]
+background = "rgba(248, 250, 255, 0.96)"
+background_alt = "rgba(236, 242, 255, 0.88)"
+panel = "rgba(255, 255, 255, 0.98)"
+panel_highlight = "rgba(255, 255, 255, 1.0)"
+accent = "#2563EB"
+accent_hover = "#1D4ED8"
+accent_active = "#1E40AF"
+accent_soft = "rgba(37, 99, 235, 0.10)"
+accent_soft_hover = "rgba(37, 99, 235, 0.16)"
+text_primary = "#0F172A"
+text_secondary = "#475569"
+text_on_accent = "#F8FAFF"
+outline = "rgba(148, 163, 184, 0.38)"
+shadow = "rgba(15, 23, 42, 0.08)"
+slider_track_bg = "rgba(148, 163, 184, 0.30)"
+thumbnail_ring = "rgba(37, 99, 235, 0.18)"
+
+[vars]
+radius = "16"
+panel_border_radius = "22"
+border_width = "1"
+button_radius = "12"
+slider_thumb_radius = "7"
+icon_scale = "1.0"
+body_size = "17"
+title_size = "28"
+thumbnail_stroke = "4"
+thumbnail_radius = "0"
+
+[components.root]
+foreground = "{colors.text_primary}"
+border_color = "transparent"
+border_radius = "{vars.radius}"
+border_width = "0"
+show_border = false
+
+[components.root.background]
+kind = "gradient"
+start = "{colors.background}"
+end = "{colors.background_alt}"
+direction = "vertical"
+
+[components.panel]
+foreground = "{colors.text_primary}"
+border_color = "{colors.outline}"
+border_radius = "{vars.panel_border_radius}"
+border_width = "{vars.border_width}"
+show_border = true
+
+[components.panel.background]
+kind = "gradient"
+start = "{colors.panel}"
+end = "{colors.panel_highlight}"
+direction = "vertical"
+
+[components.button]
+background = "{colors.accent_soft}"
+foreground = "{colors.text_primary}"
+hover_background = "{colors.accent_soft_hover}"
+active_background = "{colors.accent_soft_hover}"
+border_color = "transparent"
+border_radius = "{vars.button_radius}"
+border_width = "0"
+
+[components.button.icon]
+color = "{colors.accent}"
+size_scale = "{vars.icon_scale}"
+
+[components.slider]
+track_fill = "{colors.accent}"
+track_background = "{colors.slider_track_bg}"
+track_thickness = "4.0"
+thumb_shape = "circle"
+thumb_color = "{colors.accent}"
+thumb_radius = "{vars.slider_thumb_radius}"
+
+[components.thumbnail]
+corner_radius = "{vars.thumbnail_radius}"
+stroke_color = "{colors.thumbnail_ring}"
+stroke_width = "{vars.thumbnail_stroke}"
+overlay_images = []
+
+[components.text.title]
+color = "{colors.text_primary}"
+size = "{vars.title_size}"
+
+[components.text.body]
+color = "{colors.text_secondary}"
+size = "{vars.body_size}"

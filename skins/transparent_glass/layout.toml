@@ -1,0 +1,135 @@
+[meta]
+# Vertical layout with no borders, optimized for transparent background
+engine = "1"
+
+[layout]
+default = "glass_vertical"
+
+[[layout.variants]]
+id = "glass_vertical"
+display_name = "Transparent Vertical"
+
+[layout.variants.structure]
+type = "column"
+spacing = 16
+align = "center"
+fill = true
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 20
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "thumbnail"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 8
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "title"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "metadata"
+  [layout.variants.structure.children.params]
+  show_state = "false"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 4
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "timeline"
+  [layout.variants.structure.children.params]
+  centered = "true"
+  separator = "false"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 4
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "playback_controls"
+  [layout.variants.structure.children.params]
+  centered = "true"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 16
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "skin_warnings"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "skin_error"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "thumbnail_error"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "error"
+
+[[layout.variants]]
+id = "glass_minimal"
+display_name = "Minimal Glass"
+
+[layout.variants.structure]
+type = "column"
+spacing = 12
+align = "center"
+fill = true
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 16
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "thumbnail"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 8
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "title"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 8
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "playback_controls"
+  [layout.variants.structure.children.params]
+  centered = "true"
+
+[[layout.variants.structure.children]]
+type = "spacer"
+size = 16
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "skin_warnings"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "skin_error"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "thumbnail_error"
+
+[[layout.variants.structure.children]]
+type = "component"
+id = "error"

@@ -1,0 +1,94 @@
+# Transparent Glass - A borderless, transparent skin
+transparent_background = true
+use_gradient = false
+
+[meta]
+engine = "1"
+name = "transparent_glass"
+display_name = "Transparent Glass"
+disable_vinyl_thumbnail = false
+transparent_background = true
+
+[colors]
+# Text colors for visibility over any background
+text_primary = "#FFFFFF"
+text_secondary = "#E0E0E0"
+text_on_accent = "#FFFFFF"
+
+# Accent colors with semi-transparency
+accent = "rgba(255, 255, 255, 0.25)"
+accent_hover = "rgba(255, 255, 255, 0.35)"
+accent_active = "rgba(255, 255, 255, 0.45)"
+
+# UI elements with subtle transparency
+slider_track_bg = "rgba(255, 255, 255, 0.15)"
+outline = "rgba(255, 255, 255, 0.1)"
+
+[vars]
+radius = "0"
+panel_border_radius = "0"
+border_width = "0"
+button_radius = "12"
+slider_thumb_radius = "8"
+icon_scale = "1.1"
+body_size = "16"
+title_size = "24"
+thumbnail_stroke = "0"
+thumbnail_radius = "8"
+
+[components.root]
+foreground = "{colors.text_primary}"
+border_color = "transparent"
+border_radius = "0"
+border_width = "0"
+show_border = false
+
+[components.root.background]
+kind = "solid"
+color = "transparent"
+
+[components.panel]
+foreground = "{colors.text_primary}"
+border_color = "transparent"
+border_radius = "0"
+border_width = "0"
+show_border = false
+
+[components.panel.background]
+kind = "solid"
+color = "transparent"
+
+[components.button]
+background = "{colors.accent}"
+foreground = "{colors.text_on_accent}"
+hover_background = "{colors.accent_hover}"
+active_background = "{colors.accent_active}"
+border_color = "transparent"
+border_radius = "{vars.button_radius}"
+border_width = "0"
+
+[components.button.icon]
+color = "{colors.text_primary}"
+size_scale = "{vars.icon_scale}"
+
+[components.slider]
+track_fill = "{colors.accent_active}"
+track_background = "{colors.slider_track_bg}"
+track_thickness = "3.5"
+thumb_shape = "circle"
+thumb_color = "{colors.text_primary}"
+thumb_radius = "{vars.slider_thumb_radius}"
+
+[components.thumbnail]
+corner_radius = "{vars.thumbnail_radius}"
+stroke_color = "transparent"
+stroke_width = "0"
+overlay_images = []
+
+[components.text.title]
+color = "{colors.text_primary}"
+size = "{vars.title_size}"
+
+[components.text.body]
+color = "{colors.text_secondary}"
+size = "{vars.body_size}"
