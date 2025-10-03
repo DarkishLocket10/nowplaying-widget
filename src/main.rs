@@ -313,6 +313,11 @@ enum PendingThumbnail {
     },
 }
 
+enum SnapshotCommand {
+    Fetch,
+    Shutdown,
+}
+
 #[derive(Clone, Copy)]
 enum PlaybackButtonKind {
     Previous,
@@ -721,6 +726,9 @@ struct App {
     next_thumbnail_request_id: u64,
     current_thumbnail_track: Option<NowPlaying>,
     snapshot_rx: Option<mpsc::Receiver<SnapshotResult>>,
+    snapshot_request_tx: Option<mpsc::Sender<SnapshotCommand>>,
+    snapshot_inflight: bool,
+    last_snapshot_request: Option<Instant>,
     skin_manager: SkinManager,
     dynamic_root_gradient: Option<GradientSpec>,
     dynamic_panel_gradient: Option<GradientSpec>,
@@ -743,18 +751,36 @@ impl Default for App {
         let animations_enabled = animations_enabled_from_system();
         let vinyl_spin = VinylSpin::new();
 
-        let (tx, rx) = mpsc::channel();
+        let (snapshot_tx, snapshot_rx) = mpsc::channel();
+        let (request_tx, request_rx) = mpsc::channel();
 
-        let tx_clone = tx.clone();
         thread::spawn(move || {
-            unsafe {
-                let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+            let com_initialized = unsafe {
+                let hr = CoInitializeEx(None, COINIT_MULTITHREADED);
+                if hr.is_ok() {
+                    true
+                } else if hr == RPC_E_CHANGED_MODE {
+                    false
+                } else {
+                    let _ = snapshot_tx.send(Err(format!("COM init failed: {hr:?}")));
+                    return;
+                }
+            };
+
+            while let Ok(command) = request_rx.recv() {
+                match command {
+                    SnapshotCommand::Fetch => {
+                        let res = fetch_session_snapshot().map_err(|e| format!("{e:?}"));
+                        let _ = snapshot_tx.send(res);
+                    }
+                    SnapshotCommand::Shutdown => break,
+                }
             }
 
-            loop {
-                let res = fetch_session_snapshot().map_err(|e| format!("{e:?}"));
-                let _ = tx_clone.send(res);
-                thread::sleep(Duration::from_millis(900));
+            if com_initialized {
+                unsafe {
+                    CoUninitialize();
+                }
             }
         });
 
@@ -776,7 +802,7 @@ impl Default for App {
             vinyl_pending_refresh = true;
         }
 
-        Self {
+        let mut app = Self {
             now: NowPlaying {
                 state: PlayState::Unknown,
                 ..Default::default()
@@ -801,7 +827,10 @@ impl Default for App {
             thumbnail_inflight_track: None,
             next_thumbnail_request_id: 1,
             current_thumbnail_track: None,
-            snapshot_rx: Some(rx),
+            snapshot_rx: Some(snapshot_rx),
+            snapshot_request_tx: Some(request_tx),
+            snapshot_inflight: false,
+            last_snapshot_request: None,
             skin_manager,
             dynamic_root_gradient: None,
             dynamic_panel_gradient: None,
@@ -816,7 +845,18 @@ impl Default for App {
             vinyl_pending_refresh,
             #[cfg(target_os = "windows")]
             titlebar_state: WindowsTitlebarState::default(),
+        };
+
+        if let Some(tx) = app.snapshot_request_tx.as_ref() {
+            if tx.send(SnapshotCommand::Fetch).is_ok() {
+                app.snapshot_inflight = true;
+                app.last_snapshot_request = Some(Instant::now());
+            } else {
+                app.snapshot_request_tx = None;
+            }
         }
+
+        app
     }
 }
 
@@ -835,6 +875,9 @@ impl eframe::App for App {
                     Err(TryRecvError::Empty) => break,
                     Err(TryRecvError::Disconnected) => {
                         self.snapshot_rx = None;
+                        self.snapshot_request_tx = None;
+                        self.snapshot_inflight = false;
+                        self.last_snapshot_request = None;
                         break;
                     }
                 }
@@ -842,11 +885,14 @@ impl eframe::App for App {
         }
 
         for res in snapshots {
+            self.snapshot_inflight = false;
+            self.last_snapshot_request = None;
             match res {
                 Ok((now, timeline)) => self.apply_snapshot(now, timeline),
                 Err(e) => {
                     self.err = Some(e);
                     self.timeline = None;
+                    self.last_pull = Instant::now();
                 }
             }
         }
@@ -920,6 +966,9 @@ impl eframe::App for App {
                 //ui.separator();
                 self.render_now_playing(ui);
             });
+
+        self.maybe_request_snapshot();
+        ctx.request_repaint_after(self.desired_repaint_interval());
     }
 }
 
@@ -930,6 +979,66 @@ impl App {
         match layout.main_dir() {
             Direction::LeftToRight | Direction::RightToLeft => layout.main_align,
             Direction::TopDown | Direction::BottomUp => layout.cross_align,
+        }
+    }
+
+    fn desired_repaint_interval(&self) -> Duration {
+        if self.animations_enabled && self.now.state == PlayState::Playing {
+            Duration::from_millis(16)
+        } else if matches!(self.now.state, PlayState::Changing | PlayState::Opened) {
+            Duration::from_millis(120)
+        } else if self.now.state == PlayState::Paused {
+            Duration::from_millis(250)
+        } else {
+            Duration::from_millis(200)
+        }
+    }
+
+    fn snapshot_poll_interval(&self) -> Duration {
+        // Poll more aggressively while playback is active or changing, but
+        // back off in idle states to avoid unnecessary COM traffic.
+        match self.now.state {
+            PlayState::Playing => Duration::from_millis(800),
+            PlayState::Changing => Duration::from_millis(500),
+            PlayState::Opened => Duration::from_secs(2),
+            PlayState::Paused => Duration::from_secs(3),
+            PlayState::Stopped => Duration::from_secs(4),
+            PlayState::Closed | PlayState::Unknown => Duration::from_secs(5),
+        }
+    }
+
+    fn maybe_request_snapshot(&mut self) {
+        let now = Instant::now();
+
+        if self.snapshot_inflight {
+            if let Some(sent_at) = self.last_snapshot_request {
+                if now.duration_since(sent_at) > Duration::from_secs(5) {
+                    self.snapshot_inflight = false;
+                    self.last_snapshot_request = None;
+                }
+            } else {
+                self.snapshot_inflight = false;
+            }
+        }
+
+        if self.snapshot_inflight {
+            return;
+        }
+
+        if now.duration_since(self.last_pull) < self.snapshot_poll_interval() {
+            return;
+        }
+
+        if let Some(tx) = self.snapshot_request_tx.as_ref() {
+            match tx.send(SnapshotCommand::Fetch) {
+                Ok(()) => {
+                    self.snapshot_inflight = true;
+                    self.last_snapshot_request = Some(now);
+                }
+                Err(_) => {
+                    self.snapshot_request_tx = None;
+                }
+            }
         }
     }
 
@@ -2355,6 +2464,14 @@ impl App {
             Err(e) => {
                 self.err = Some(format!("{action_name} failed: {e:?}"));
             }
+        }
+    }
+}
+
+impl Drop for App {
+    fn drop(&mut self) {
+        if let Some(tx) = self.snapshot_request_tx.take() {
+            let _ = tx.send(SnapshotCommand::Shutdown);
         }
     }
 }
