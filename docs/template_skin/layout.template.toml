@@ -1,0 +1,140 @@
+# Template layout covering every node type and parameter so you can model custom arrangements.
+
+[meta] # Metadata table identifying the layout engine version used by this file.
+engine = "1" # Required layout engine version; keep at "1" unless the engine updates (Example: "1").
+
+[layout] # Global layout settings shared across all variants.
+default = "template_wide" # Variant id that should load first when the skin is selected (Example: "template_wide").
+
+[[layout.variants]] # Start of a layout variant definition; repeat this block for each variant you provide.
+id = "template_wide" # Unique identifier referenced by the default field and the settings UI (Example: "template_wide").
+display_name = "Wide Showcase" # Human-friendly name shown in the skin picker (Example: "Wide Showcase").
+
+[layout.variants.structure] # Root node describing how children are arranged for this variant.
+type = "row" # Node type; choose "row", "column", "component", or "spacer" (Example: "row").
+align = "center" # Cross-axis alignment for row/column nodes; options: "start", "center", "end" (Example: "center").
+spacing = 24 # Gap between child nodes measured in logical pixels (Example: 24).
+fill = true # When true the node expands to use the available width before placing children (Example: true).
+visible = true # Optional visibility flag; set to false to hide the entire node subtree (Example: true).
+
+[[layout.variants.structure.children]] # First child of the root row; demonstrates the spacer node type.
+type = "spacer" # Spacer nodes add empty space; only the size field is used (Example: "spacer").
+size = 16 # Spacer thickness in logical pixels; applies horizontally in a row and vertically in a column (Example: 16).
+
+[[layout.variants.structure.children]] # Second child showing a column node that groups metadata components.
+type = "column" # Column nodes lay out children vertically (Example: "column").
+align = "start" # Align children along the horizontal (cross) axis; start keeps them left-aligned (Example: "start").
+spacing = 12 # Vertical spacing between column children in logical pixels (Example: 12).
+fill = false # When false the column will size itself to its contents (Example: false).
+visible = true # Visibility toggle for the column and all of its descendants (Example: true).
+
+    [[layout.variants.structure.children.children]] # Nested child: component node for the track title within the metadata column.
+    type = "component" # Component nodes render built-in UI pieces (Example: "component").
+    id = "title" # Component identifier to display the track title text (Example: "title").
+    visible = true # Hide or show this specific component node (Example: true).
+
+    [[layout.variants.structure.children.children]] # Nested child: metadata block with parameters toggling specific sub-lines.
+    type = "component" # Component node for metadata summary (Example: "component").
+    id = "metadata" # Renders artist, album, and state sections unless overridden by params (Example: "metadata").
+      [layout.variants.structure.children.children.params] # Parameters table for the metadata component.
+      show_state = "true" # Controls whether the playback state line is rendered (Example: "true").
+      show_state_label = "false" # Controls the "State:" label prefix on the status line (Example: "false").
+
+    [[layout.variants.structure.children.children]] # Nested child: timeline slider with custom behaviour flags.
+    type = "component" # Component node for the timeline (Example: "component").
+    id = "timeline" # Displays the seek slider and timestamps (Example: "timeline").
+      [layout.variants.structure.children.children.params] # Parameters for the timeline component.
+      centered = "false" # Set to "true" to center the slider horizontally (Example: "false").
+      separator = "true" # Set to "false" to hide the separator line above the timeline (Example: "true").
+
+    [[layout.variants.structure.children.children]] # Nested child: component intentionally hidden to demonstrate the visible flag.
+    type = "component" # Component node representing optional metadata state line (Example: "component").
+    id = "metadata.state" # Dedicated playback state line component (Example: "metadata.state").
+    visible = false # When false the component is omitted from the final layout (Example: false).
+
+[[layout.variants.structure.children]] # Third child: component node for the album thumbnail with a parameter example.
+type = "component" # Component node highlighting the album artwork (Example: "component").
+id = "thumbnail" # Renders the album artwork or vinyl disc (Example: "thumbnail").
+visible = true # Toggle to hide the artwork frame if desired (Example: true).
+  [layout.variants.structure.children.params] # Parameters applied to the thumbnail component.
+  allow_overlay = "true" # Custom example flag you could read in code; unused by default templates (Example: "true").
+
+[[layout.variants.structure.children]] # Fourth child: column containing playback controls and warnings stack.
+type = "column" # Column node to stack controls vertically (Example: "column").
+align = "center" # Aligns nested components horizontally within the column (Example: "center").
+spacing = 10 # Vertical spacing between control elements (Example: 10).
+fill = true # Allows the column to stretch within the row for balanced spacing (Example: true).
+
+    [[layout.variants.structure.children.children]] # Playback controls row with centering parameter.
+    type = "component" # Component node for the transport button row (Example: "component").
+    id = "playback_controls" # Standard previous/play/pause/next controls (Example: "playback_controls").
+      [layout.variants.structure.children.children.params] # Parameters table for playback controls.
+      centered = "true" # Centers the button row within the available width (Example: "true").
+
+    [[layout.variants.structure.children.children]] # Spacer providing breathing room between controls and warnings.
+    type = "spacer" # Spacer node inside the controls column (Example: "spacer").
+    size = 8 # Spacer height between the controls and warning stack (Example: 8).
+
+    [[layout.variants.structure.children.children]] # Skin warnings component to surface non-fatal issues.
+    type = "component" # Component node for the skin warnings list (Example: "component").
+    id = "skin_warnings" # Displays skin parsing warnings (Example: "skin_warnings").
+
+    [[layout.variants.structure.children.children]] # Skin error component to surface fatal loading problems.
+    type = "component" # Component node representing blocking skin errors (Example: "component").
+    id = "skin_error" # Shows theme/layout loader errors (Example: "skin_error").
+
+    [[layout.variants.structure.children.children]] # Component to display thumbnail loading issues.
+    type = "component" # Component node for thumbnail failure messages (Example: "component").
+    id = "thumbnail_error" # Shows artwork loading errors (Example: "thumbnail_error").
+
+    [[layout.variants.structure.children.children]] # Component summarising playback errors from the media session.
+    type = "component" # Component node for global playback errors (Example: "component").
+    id = "error" # Displays now-playing API errors (Example: "error").
+
+[[layout.variants]] # Second variant providing a compact stacked arrangement.
+id = "template_compact" # Unique identifier for the compact layout (Example: "template_compact").
+display_name = "Compact Stack" # Display name for the compact layout (Example: "Compact Stack").
+
+[layout.variants.structure] # Root node for the compact variant.
+type = "column" # Column root to stack everything vertically (Example: "column").
+align = "center" # Center children horizontally within the column (Example: "center").
+spacing = 14 # Vertical gap between children (Example: 14).
+fill = true # Allow the column to stretch with the window height (Example: true).
+
+[[layout.variants.structure.children]] # Top child: album artwork component.
+type = "component" # Component node for the thumbnail again (Example: "component").
+id = "thumbnail" # Album artwork component identifier (Example: "thumbnail").
+
+[[layout.variants.structure.children]] # Spacer to separate artwork from text.
+type = "spacer" # Spacer node for vertical breathing room (Example: "spacer").
+size = 12 # Spacer height value (Example: 12).
+
+[[layout.variants.structure.children]] # Title component positioned under the artwork.
+type = "component" # Component node for the track title (Example: "component").
+id = "title" # Identifier for title text (Example: "title").
+
+[[layout.variants.structure.children]] # Artist metadata displayed below the title.
+type = "component" # Component node for artist text (Example: "component").
+id = "metadata.artist" # Renders only the artist line (Example: "metadata.artist").
+
+[[layout.variants.structure.children]] # Album metadata shown after the artist line.
+type = "component" # Component node for album text (Example: "component").
+id = "metadata.album" # Renders only the album line (Example: "metadata.album").
+
+[[layout.variants.structure.children]] # Playback controls centered under the metadata.
+type = "component" # Component node for playback controls (Example: "component").
+id = "playback_controls" # Identifier for the transport row (Example: "playback_controls").
+  [layout.variants.structure.children.params] # Parameters for the compact playback controls node.
+  centered = "true" # Center the transport buttons horizontally (Example: "true").
+
+[[layout.variants.structure.children]] # Timeline slider placed near the bottom.
+type = "component" # Component node for the timeline (Example: "component").
+id = "timeline" # Seek slider component identifier (Example: "timeline").
+  [layout.variants.structure.children.params] # Parameters for the compact timeline node.
+  centered = "true" # Center the timeline content horizontally (Example: "true").
+  separator = "false" # Hide the separator line for a cleaner compact look (Example: "false").
+
+[[layout.variants.structure.children]] # Final component to surface warnings/errors below the controls.
+type = "component" # Component node for aggregated warnings/errors (Example: "component").
+id = "skin_warnings" # You can swap to "error" or other status components if preferred (Example: "skin_warnings").
+visible = true # Keep this component visible so issues are surfaced (Example: true).

@@ -86,9 +86,13 @@ thumb_radius = "{vars.slider_thumb_radius}"
 
 [components.thumbnail]
 corner_radius = "{vars.thumbnail_radius}"
-stroke_color = "{colors.thumbnail_ring}"
-stroke_width = "{vars.thumbnail_stroke}"
+stroke_color = "transparent"
+stroke_width = "0"
 overlay_images = []
+
+[components.thumbnail.background]
+kind = "solid"
+color = "transparent"
 
 [components.text.title]
 color = "{colors.text_primary}"

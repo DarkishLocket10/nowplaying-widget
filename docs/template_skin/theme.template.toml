@@ -1,0 +1,114 @@
+# Template theme demonstrating every available option in theme.toml so you can copy, trim, and customise.
+use_gradient = true # Global toggle for dynamic gradients sourced from album art (Example: true to enable, false to keep static colors).
+transparent_background = false # Optional flag to skip painting the root/panel backgrounds for glass skins (Example: true for full transparency).
+
+[meta] # Metadata block that describes this skin to the application.
+engine = "1" # Required theme engine version; keep at "1" unless a future version is introduced (Example: "1").
+name = "template_skin" # Internal identifier for the skin; usually matches the folder name (Example: "graphite").
+display_name = "Template Skin" # Human-readable name shown in the settings UI (Example: "Graphite").
+disable_vinyl_thumbnail = false # Set to true to force the classic square artwork instead of the vinyl effect (Example: true).
+transparent_background = false # Meta-level override that mirrors the top-level flag for compatibility (Example: true for transparent skins).
+
+[colors] # Palette entries referenced throughout the document using {colors.key} tokens.
+background = "#10121A" # Primary window background colour (Example: "#10121A").
+background_alt = "#182034" # Secondary colour for gradients or alternate surfaces (Example: "#182034").
+panel = "rgba(24, 32, 52, 0.95)" # Inner panel fill colour (Example: "rgba(24, 32, 52, 0.95)").
+panel_highlight = "rgba(34, 44, 72, 0.95)" # Alternate panel colour for gradient blending (Example: "rgba(34, 44, 72, 0.95)").
+accent = "#4C8DFF" # Primary accent for buttons and sliders (Example: "#4C8DFF").
+accent_hover = "#5EA0FF" # Accent colour when hovered (Example: "#5EA0FF").
+accent_active = "#336CFF" # Accent colour while pressed/active (Example: "#336CFF").
+accent_soft = "rgba(76, 141, 255, 0.15)" # Subtle accent surface for resting states (Example: "rgba(76, 141, 255, 0.15)").
+accent_soft_hover = "rgba(76, 141, 255, 0.25)" # Soft accent variant on hover (Example: "rgba(76, 141, 255, 0.25)").
+text_primary = "#F7F9FC" # Primary text colour for titles (Example: "#F7F9FC").
+text_secondary = "#A5ADC1" # Secondary text colour for metadata (Example: "#A5ADC1").
+text_on_accent = "#081123" # Foreground colour when placed on accent backgrounds (Example: "#081123").
+outline = "rgba(76, 141, 255, 0.35)" # Outline colour for borders and strokes (Example: "rgba(76, 141, 255, 0.35)").
+shadow = "rgba(8, 11, 23, 0.45)" # Shadow tint for optional drop shadows (Example: "rgba(8, 11, 23, 0.45)").
+slider_track_bg = "rgba(255, 255, 255, 0.15)" # Background colour for the slider track (Example: "rgba(255, 255, 255, 0.15)").
+thumbnail_ring = "rgba(76, 141, 255, 0.20)" # Default ring colour for thumbnail strokes (Example: "rgba(76, 141, 255, 0.20)").
+
+[vars] # Numeric variables that can be reused via {vars.key} tokens.
+radius = "18" # Corner radius applied to root/panel areas (Example: "18").
+panel_border_radius = "24" # Corner radius for the inner panel (Example: "24").
+border_width = "1.5" # Default outline width in logical pixels (Example: "1.5").
+button_radius = "14" # Corner radius for buttons (Example: "14").
+slider_thumb_radius = "8" # Radius for circular slider thumbs (Example: "8").
+icon_scale = "1.0" # Icon scale multiplier for transport icons (Example: "1.2").
+body_size = "18" # Font size for body text (Example: "18").
+title_size = "28" # Font size for track titles (Example: "28").
+thumbnail_stroke = "4" # Thickness of the thumbnail stroke ring (Example: "4").
+thumbnail_radius = "12" # Corner radius applied to the thumbnail image (Example: "12").
+
+[components.root] # Styling for the outer window/root area.
+foreground = "{colors.text_primary}" # Default text colour for content directly on the root (Example: "{colors.text_primary}").
+border_color = "transparent" # Outline colour for the root; use "transparent" to hide (Example: "transparent").
+border_radius = "{vars.radius}" # Corner radius for the window background (Example: "{vars.radius}").
+border_width = "0" # Outline thickness for the root (Example: "0").
+show_border = false # Toggles whether the root border is drawn at all (Example: false).
+
+[components.root.background] # Background fill for the root surface.
+kind = "gradient" # Choose between "gradient" or "solid" backgrounds (Example: "gradient").
+start = "{colors.background}" # First gradient stop or solid colour (Example: "{colors.background}").
+end = "{colors.background_alt}" # Second gradient stop when using gradients (Example: "{colors.background_alt}").
+direction = "vertical" # Orientation of the gradient; "vertical" or "horizontal" (Example: "horizontal").
+
+[components.panel] # Styling for the main content panel hosting controls and text.
+foreground = "{colors.text_primary}" # Default text colour within the panel (Example: "{colors.text_primary}").
+border_color = "{colors.outline}" # Outline colour around the panel (Example: "{colors.outline}").
+border_radius = "{vars.panel_border_radius}" # Corner radius for the panel (Example: "{vars.panel_border_radius}").
+border_width = "{vars.border_width}" # Outline thickness around the panel (Example: "{vars.border_width}").
+show_border = true # Whether to draw the panel border (Example: true).
+
+[components.panel.background] # Panel background definition; supports solid fills or gradients.
+kind = "gradient" # Background type for the panel (Example: "gradient").
+start = "{colors.panel}" # Starting colour for the panel gradient (Example: "{colors.panel}").
+end = "{colors.panel_highlight}" # Ending colour for the panel gradient (Example: "{colors.panel_highlight}").
+direction = "vertical" # Gradient flow direction (Example: "vertical").
+
+[components.button] # Base styling for transport buttons.
+background = "{colors.accent_soft}" # Resting background colour (Example: "{colors.accent_soft}").
+foreground = "{colors.text_primary}" # Icon/text colour when the button is idle (Example: "{colors.text_primary}").
+hover_background = "{colors.accent_soft_hover}" # Background colour when hovered (Example: "{colors.accent_soft_hover}").
+active_background = "{colors.accent_active}" # Background colour while pressed (Example: "{colors.accent_active}").
+border_color = "transparent" # Outline colour for buttons (Example: "transparent").
+border_radius = "{vars.button_radius}" # Button corner radius (Example: "{vars.button_radius}").
+border_width = "0" # Outline thickness for buttons (Example: "0").
+
+[components.button.icon] # Nested settings for button glyphs.
+color = "{colors.accent}" # Icon colour drawn over the button background (Example: "{colors.accent}").
+size_scale = "{vars.icon_scale}" # Scale multiplier applied to icon size (Example: "1.1").
+
+[components.slider] # Styling for the timeline/seek slider.
+track_fill = "{colors.accent}" # Colour for the filled portion of the track (Example: "{colors.accent}").
+track_background = "{colors.slider_track_bg}" # Colour for the unfilled track (Example: "{colors.slider_track_bg}").
+track_thickness = "4.0" # Thickness of the slider track in logical pixels (Example: "4.0").
+thumb_shape = "circle" # Choose "circle" for a simple knob or "image" for a custom asset (Example: "circle").
+thumb_color = "{colors.accent}" # Colour of the circular thumb; ignored when using images (Example: "{colors.accent}").
+thumb_radius = "{vars.slider_thumb_radius}" # Radius for circular thumbs (Example: "{vars.slider_thumb_radius}").
+thumb_size = "32" # Size of the thumb image square when thumb_shape = "image" (Example: "32").
+thumb_image = "thumb.png" # Asset path for image-based thumbs, relative to the skin assets folder (Example: "slider-thumb.png").
+
+[components.thumbnail] # Configuration for the album artwork frame.
+corner_radius = "{vars.thumbnail_radius}" # Corner rounding applied to the artwork (Example: "{vars.thumbnail_radius}").
+border_image = "thumbnail-border.png" # Optional overlay asset automatically added to the overlay list (Example: "thumbnail-border.png").
+stroke_color = "{colors.thumbnail_ring}" # Colour of the procedural stroke around the artwork (Example: "{colors.thumbnail_ring}").
+stroke_width = "{vars.thumbnail_stroke}" # Thickness of the stroke in logical pixels (Example: "{vars.thumbnail_stroke}").
+overlay_images = [ # List of additional overlays rendered above the artwork (Example: ["frame.png"]).
+    "frame.png", # Simple overlay referencing assets/frame.png (Example: "frame.png").
+    { path = "sparkles.png", offset_x = "12", offset_y = "-8" }, # Table entry with positional offsets for the overlay (Example: { path = "sparkles.png", offset_x = "12", offset_y = "-8" }).
+] # Closing bracket for overlay images list (Example: remove entries if unused).
+
+[components.thumbnail.background] # Optional background drawn behind the artwork.
+kind = "solid" # "solid" fills with a colour while "gradient" lets you define start/end stops (Example: "solid").
+color = "transparent" # Colour used when kind = "solid"; use "transparent" to disable (Example: "#FFFFFF").
+# start = "{colors.panel}" # Uncomment when using a gradient background to set the first colour (Example: "{colors.panel}").
+# end = "{colors.panel_highlight}" # Uncomment when using gradients to set the second colour (Example: "{colors.panel_highlight}").
+# direction = "horizontal" # Uncomment and set to "vertical" or "horizontal" for gradient flow (Example: "horizontal").
+
+[components.text.title] # Typography for the primary title line.
+color = "{colors.text_primary}" # Colour applied to the track title text (Example: "{colors.text_primary}").
+size = "{vars.title_size}" # Point size of the title font (Example: "{vars.title_size}").
+
+[components.text.body] # Typography for secondary text lines (artist, album, state).
+color = "{colors.text_secondary}" # Colour applied to metadata lines (Example: "{colors.text_secondary}").
+size = "{vars.body_size}" # Point size for metadata/body text (Example: "{vars.body_size}").
